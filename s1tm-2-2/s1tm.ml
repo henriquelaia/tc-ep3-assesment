@@ -248,6 +248,11 @@ let s1tm (m : tm) (w : string) : bool option =
   | Reject _ -> Some false
   | Dont_know -> None
 
+  let () =
+  ignore tm_w_de_string;
+  ignore tm_w_para_string;
+  ignore s1tm
+
 (* ---------- programa ---------- *)
 
 let () =
