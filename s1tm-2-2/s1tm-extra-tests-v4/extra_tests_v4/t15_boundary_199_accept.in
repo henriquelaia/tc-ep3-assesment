@@ -1,0 +1,18 @@
+M:
+  states: [s, goR, goL, qA, qR]
+  input_alphabet: [a]
+  tape_alphabet_extra: [_, A]
+  start_state: s
+  accept_state: qA
+  reject_state: qR
+  delta:
+    s:
+      a: [goR, A, R]
+    goR:
+      a: [goR, a, R]
+      _: [goL, _, L]
+    goL:
+      a: [goL, a, L]
+      A: [qA, A, S]
+      _: [qR, _, S]
+w: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

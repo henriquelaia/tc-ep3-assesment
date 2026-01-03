@@ -1,0 +1,17 @@
+# OCaml / Dune
+_build/
+*.cmo
+*.cmi
+*.cma
+*.cmx
+*.cmxa
+*.cmxs
+*.o
+*~
+*.ml.d
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
