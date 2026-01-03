@@ -1,0 +1,50 @@
+M:
+  states: [q0, qaR, qaL, qbR, qbL, qBack, qA, qR]
+  input_alphabet: [a, b]
+  tape_alphabet_extra: [_, X, Z]
+  start_state: q0
+  accept_state: qA
+  reject_state: qR
+  delta:
+    q0:
+      X: [q0, X, R]
+      Z: [q0, Z, R]
+      a: [qaR, X, R]
+      b: [qbR, Z, R]
+      _: [qA, _, S]
+
+    qaR:
+      a: [qaR, a, R]
+      b: [qaR, b, R]
+      X: [qaR, X, R]
+      Z: [qaR, Z, R]
+      _: [qaL, _, L]
+
+    qaL:
+      X: [qaL, X, L]
+      Z: [qaL, Z, L]
+      a: [qBack, X, L]
+      b: [qR, b, S]
+      _: [qA, _, S]
+
+    qbR:
+      a: [qbR, a, R]
+      b: [qbR, b, R]
+      X: [qbR, X, R]
+      Z: [qbR, Z, R]
+      _: [qbL, _, L]
+
+    qbL:
+      X: [qbL, X, L]
+      Z: [qbL, Z, L]
+      b: [qBack, Z, L]
+      a: [qR, a, S]
+      _: [qA, _, S]
+
+    qBack:
+      a: [qBack, a, L]
+      b: [qBack, b, L]
+      X: [qBack, X, L]
+      Z: [qBack, Z, L]
+      _: [q0, _, R]
+w: "ba"
