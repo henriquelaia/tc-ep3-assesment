@@ -7,7 +7,7 @@ let simbolo_to_yaml s = `String s
 let simbolo_of_yaml = function
   | `String s -> Ok s
   | `Float f -> Ok (string_of_int (int_of_float f))
-  | `Bool b -> Ok (if b then "1" else "0")
+  | `Bool b -> Ok (if b then "y" else "n")
   | v -> Error (`Msg ("Invalid simbolo in YAML: " ^ Yaml.to_string_exn v))
 
 type direction = L | R | S
