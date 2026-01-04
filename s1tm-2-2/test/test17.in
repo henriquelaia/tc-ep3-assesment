@@ -1,0 +1,34 @@
+M:
+  states: [q0, q1, q2, q3, q4, qA, qR]
+  input_alphabet: [a, b, c]
+  tape_alphabet_extra: [x, y, z, _]
+  start_state: q0
+  accept_state: qA
+  reject_state: qR
+  delta:
+    q0:
+      a: [q1, x, R]   # Found a, mark x
+      y: [q4, y, R]   # Skip processed b's (actually looking for end)
+      _: [qA, _, S]   # Done
+    q1: 
+      a: [q1, a, R]
+      y: [q1, y, R]
+      b: [q2, y, R]   # Found b, mark y
+    q2:
+      b: [q2, b, R]
+      z: [q2, z, R]
+      c: [q3, z, L]   # Found c, mark z, go back
+    q3:
+      b: [q3, b, L]
+      y: [q3, y, L]
+      z: [q3, z, L]
+      a: [q3, a, L]
+      x: [q0, x, R]   # Back to start
+    q4:
+      y: [q4, y, R]
+      z: [q4, z, R]
+      _: [qA, _, S]   # Ensure only y's and z's left
+      a: [qR, a, S]
+      b: [qR, b, S] 
+      c: [qR, c, S]
+w: "aabbcc"

@@ -1,0 +1,18 @@
+M:
+  states: [s, q1, q2, q3, qA, qR]
+  input_alphabet: [a]
+  tape_alphabet_extra: [X]
+  start_state: s
+  accept_state: qA
+  reject_state: qR
+  delta:
+    s: # Index 0 -> Move L (Shift 1, creates _)
+      a: [q1, a, L]
+    q1: # Read _ (new 0), Move R (to 1, old 0)
+      _: [q2, _, R]
+    q2: # Read a (old 0), Move L (back to 0)
+      a: [q3, a, L]
+    q3: # Should read _ (the one created by s->q1)
+      _: [qA, X, S] # Confirm it exists by writing X
+
+w: "a"

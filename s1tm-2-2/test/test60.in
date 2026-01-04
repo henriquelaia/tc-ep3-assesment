@@ -1,0 +1,15 @@
+M:
+  states: [s, q1, qA, qR]
+  input_alphabet: [a]
+  tape_alphabet_extra: [X]
+  start_state: s
+  accept_state: qA
+  reject_state: qR
+  delta:
+    s:
+      a: [q1, X, L] # Try move L at start (index 0). Should stay at index 0.
+    q1:
+      X: [qA, X, R] # If stayed at 0, reads X (just written). Move R to index 1.
+      _: [qR, _, S] # If moved to -1 (unbounded), would read _ -> Reject.
+
+w: "a"

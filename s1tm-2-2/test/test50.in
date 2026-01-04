@@ -1,0 +1,15 @@
+M:
+  states: [s, qA, qR]
+  input_alphabet: [a, b, c]
+  tape_alphabet_extra: [] # Empty, implicit _
+  start_state: s
+  accept_state: qA
+  reject_state: qR
+  delta:
+    s:
+      a: [s, a, R]
+      b: [s, b, R]
+      c: [s, c, R]
+      _: [qA, _, S] # Explicitly matching implicit blank
+
+w: "abc"

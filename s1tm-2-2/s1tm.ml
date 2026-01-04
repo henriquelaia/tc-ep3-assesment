@@ -84,7 +84,7 @@ let rec read_multiplelines () =
   with End_of_file -> ""
 
 let yaml_val = function
-  | Ok v -> v (* v has type Yaml.value *)
+  | Ok v -> v 
   | Error (`Msg m) -> failwith m
 
 (* string para tm_w *)
@@ -123,7 +123,7 @@ let unique_items (xs : string list) : string list =
   Hashtbl.fold (fun k () acc -> k :: acc) tbl []
 
 let string_to_list (w : string) : simbolo list =
-  (* Assume-se que cada simbolo e um caracter. *)
+  (* Cada simbolo e um caracter. *)
   List.init (String.length w) (fun i -> String.make 1 w.[i])
 
 let check_tm_validity (m : tm) : bool =
@@ -132,7 +132,7 @@ let check_tm_validity (m : tm) : bool =
     && contains_str m.accept_state m.states
     && contains_str m.reject_state m.states
   in
-  let tape_alpha = unique_items (m.input_alphabet @ m.tape_alphabet_extra) in
+  let tape_alpha = unique_items (m.input_alphabet @ m.tape_alphabet_extra @ [blank]) in
   let blank_ok = contains_str blank tape_alpha in
   let delta_ok =
     Hashtbl.fold
@@ -174,7 +174,7 @@ let move_head_right (t : zipper) : zipper =
 
 let move_head_left (t : zipper) : zipper =
   match t.left_stack with
-  | [] -> {left_stack = []; current = blank; right_stack = t.current :: t.right_stack}
+  | [] -> t 
   | x :: xs -> {left_stack = xs; current = x; right_stack = t.current :: t.right_stack}
 
 let move_head (t : zipper) = function

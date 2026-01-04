@@ -1,0 +1,75 @@
+M:
+  states: [q0, q1, q2, q3, q4, q5, q6, qA, qR]
+  input_alphabet: [0, 1]
+  tape_alphabet_extra: [X, Y, A, B] # X=start, Y=sep, A=marked0, B=marked1
+  start_state: q0
+  accept_state: qA
+  reject_state: qR
+
+  delta:
+    q0: # Mark start with X
+      0: [q1, X, R] # First is 0
+      1: [q1, X, R] # First is 1 (logic simplified: assume always X at start if desired, or shift right. Here we just overwrite first char for simplicity? No, duplication means w -> ww. Let's do a simpler version: Just copy 10 -> 1010 requires space. Let's assume infinite tape to right.)
+      # New logic: Mark current char, find first _, write char, return.
+      
+    # Actually, proper WW requires shifting or simpler: w#w.
+    # Let's do w -> w#w logic or just w -> ww if we consume w.
+    # Simpler: Copy w to end.
+    
+    q0: # Start loop. Find first 0/1.
+       0: [q1, A, R] # Mark 0 as A, go copy it
+       1: [q2, B, R] # Mark 1 as B, go copy it
+       A: [q0, A, R] # Skip marked
+       B: [q0, B, R]
+       _: [q5, _, L] # All marked. Go to cleanup.
+       
+    q1: # Moving R to find first blank to write 0
+       0: [q1, 0, R]
+       1: [q1, 1, R]
+       A: [q1, A, R]
+       B: [q1, B, R]
+       _: [q3, 0, L] # Found blank, write 0, go back
+       
+    q2: # Moving R to find first blank to write 1
+       0: [q2, 0, R]
+       1: [q2, 1, R]
+       A: [q2, A, R]
+       B: [q2, B, R]
+       _: [q3, 1, L] # Found blank, write 1, go back
+       
+    q3: # Go back L to last marked char
+       0: [q3, 0, L]
+       1: [q3, 1, L]
+       A: [q3, A, L]
+       B: [q3, B, L]
+       _: [q0, _, R] # Found left end (implicit _ or explicitly using a marker? We need an explicit Left marker or ensure we dont go off tape. But tape is [left_rev ...].
+       # Wait, if we move left past start we need a marker.
+       # Let's assume input is > 0 length.
+       
+       # Better logic: Check if current is A or B? No.
+       # Need Left Marker. Let's use a wrapper that shifts Everything right first? Too complex.
+       # We can just bounce off the A/B on the left?
+       
+    # Retry q3 logic to stop at A/B?
+    # No, we have A, B, 0, 1 on tape.
+    # Ex: A 0 1 _ -> A 0 1 0 _
+    # We are at the new 0. Go left until we hit A or B? No, we might hit other A/Bs.
+    # We need to distinguish "Processed" A/Bs from "To Process" 0/1s.
+    
+    # Let's simplify test53: "Reverse String" or "Shift Right".
+    # Or just "Parity Check": 101 -> 101_0 (even) or 101_1 (odd).
+    
+    # Let's do Parity Check (Append 0 if even number of 1s, 1 if odd).
+    # Tape: 101 -> 1011
+    
+    q0: # Scan and count parity
+       0: [q0, 0, R] # Even + 0 -> Even
+       1: [q1, 1, R] # Even + 1 -> Odd
+       _: [qA, 0, S] # Even, end -> write 0
+       
+    q1: # Odd state
+       0: [q1, 0, R] # Odd + 0 -> Odd
+       1: [q0, 1, R] # Odd + 1 -> Even
+       _: [qA, 1, S] # Odd, end -> write 1
+
+w: "101"

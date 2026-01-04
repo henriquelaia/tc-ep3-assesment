@@ -1,0 +1,25 @@
+M:
+  states: [q0, q1, q2, qA, qR]
+  input_alphabet: [0, 1]
+  tape_alphabet_extra: [] # implicit _
+  start_state: q0
+  accept_state: qA
+  reject_state: qR
+
+  delta:
+    q0: # Go to right end
+      0: [q0, 0, R]
+      1: [q0, 1, R]
+      _: [q1, _, L]
+
+    q1: # Add 1 logic: if 0->1 done; if 1->0 carry
+      0: [q2, 1, L]
+      1: [q1, 0, L]
+      _: [q2, 1, L] # Overflow case (111 -> 1000), writes 1 at front
+
+    q2: # Go back to start (optional, but good for cleanliness)
+      0: [q2, 0, L]
+      1: [q2, 1, L]
+      _: [qA, _, S] # Done
+
+w: "1011"

@@ -1,0 +1,28 @@
+M:
+  states: [q0, q1, q2, q3, q4, qA, qR]
+  input_alphabet: [a, b]
+  tape_alphabet_extra: [x, y, _]
+  start_state: q0
+  accept_state: qA
+  reject_state: qR
+  delta:
+    q0:
+      a: [q1, x, R]   # Mark a with x
+      b: [qR, b, S]   # Unexpected b
+      y: [q3, y, R]   # Skip checked y's
+      _: [qA, _, S]   # Empty or done
+    q1:
+      a: [q1, a, R]   # Skip a's
+      y: [q1, y, R]   # Skip y's
+      b: [q2, y, L]   # Found match b, mark y, go back
+      _: [qR, _, S]   # No matching b found
+    q2:
+      a: [q2, a, L]   # Go back
+      y: [q2, y, L]   # Go back
+      x: [q0, x, R]   # Found last x, start over from q0
+    q3:
+      y: [q3, y, R]   # Check if any input left
+      _: [qA, _, S]   # All clean
+      a: [qR, a, S]   # Extra a
+      b: [qR, b, S]   # Extra b
+w: "aaabbb"

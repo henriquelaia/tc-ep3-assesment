@@ -1,0 +1,15 @@
+M:
+  states: [s, qA, qR]
+  input_alphabet: [a, b, c]
+  tape_alphabet_extra: [] # Empty, implicit _
+  start_state: s
+  accept_state: qA
+  reject_state: qR
+  delta:
+    s:
+      a: [s, _, R] # Overwriting with implicit blank
+      b: [s, _, R]
+      c: [s, _, R]
+      _: [qA, _, S]
+
+w: "abc"
