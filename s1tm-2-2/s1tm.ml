@@ -93,25 +93,19 @@ let tm_w_de_string s = s |> Yaml.of_string_exn |> tm_w_of_yaml |> yaml_val
 (* tm_w para string *)
 let tm_w_para_string tm_w = tm_w |> tm_w_to_yaml |> Yaml.to_string_exn
 
-(* ------------------------------------------------------------ *)
-(* EP3 — Simulação de TM de 1 fita (até 200 passos)              *)
-(* Saída pedida no enunciado:                                    *)
-(*   YES/NO + fita (terminando em _)                              *)
-(*   DON'T KNOW (se > 200 passos)                                 *)
-(*   INVALID (se input inválido)                                  *)
-(*
-   Nota: nos ficheiros de teste fornecidos por vezes aparece TRUE/FALSE.
-   Se quiseres replicar exatamente esses testes locais, troca a função
-   [string_of_bool_out] abaixo.
-*)
+let () =
+  ignore tm_w_de_string;
+  ignore tm_w_para_string
+
+(* EP3 - Simulador de TM (ate 200 passos)*)
 
 let blank = "_"
 let max_steps = 200
 
 let string_of_bool_out (b : bool) = if b then "YES" else "NO"
-(* alternativa para os testes antigos: if b then "TRUE" else "FALSE" *)
+(* Alternativa: if b then "TRUE" else "FALSE" *)
 
-(* ---------- parsing seguro ---------- *)
+(* ---------- parsing ---------- *)
 
 let tm_w_de_string_safe (s : string) : tm_w option =
   try
@@ -120,7 +114,7 @@ let tm_w_de_string_safe (s : string) : tm_w option =
     | Ok y -> ( match tm_w_of_yaml y with Ok v -> Some v | Error _ -> None )
   with _ -> None
 
-(* ---------- validação ---------- *)
+(* ---------- validacao ---------- *)
 
 let mem_string (x : string) (xs : string list) = List.exists (fun y -> x = y) xs
 
@@ -130,7 +124,7 @@ let uniq (xs : string list) : string list =
   Hashtbl.fold (fun k () acc -> k :: acc) tbl []
 
 let symbols_of_word (w : string) : simbolo list =
-  (* Assunção do curso: cada símbolo é 1 char. *)
+  (* Assume-se que cada simbolo e um caracter. *)
   List.init (String.length w) (fun i -> String.make 1 w.[i])
 
 let validate_tm (m : tm) : bool =
@@ -161,7 +155,7 @@ let validate_input_word (m : tm) (w : string) : bool =
   let syms = symbols_of_word w in
   List.for_all (fun s -> mem_string s m.input_alphabet) syms
 
-(* ---------- fita (zipper) ---------- *)
+(* ---------- fita ---------- *)
 
 type tape = {left_rev: simbolo list; cur: simbolo; right: simbolo list}
 
@@ -209,7 +203,7 @@ let tape_to_string (t : tape) : string =
   | [] -> blank
   | _ -> String.concat "" (core @ [blank])
 
-(* ---------- simulação ---------- *)
+(* ---------- simulacao ---------- *)
 
 type sim_result =
   | Accept of tape
@@ -236,22 +230,19 @@ let simulate (m : tm) (w : string) : sim_result =
     else if steps >= max_steps then Dont_know
     else
       match step m st t with
-      | None -> Reject t (* máquina pára fora de qA/qR -> assumimos rejeição *)
+      | None -> Reject t (* Parou fora de qA ou qR, rejeita *)
       | Some (st', t') -> loop (steps + 1) st' t'
   in
   loop 0 m.start_state (tape_of_word w)
 
-(* s1tm pedido no enunciado (só o resultado booleano) *)
+(* s1tm (apenas booleano) *)
 let s1tm (m : tm) (w : string) : bool option =
   match simulate m w with
   | Accept _ -> Some true
   | Reject _ -> Some false
   | Dont_know -> None
 
-  let () =
-  ignore tm_w_de_string;
-  ignore tm_w_para_string;
-  ignore s1tm
+
 
 (* ---------- programa ---------- *)
 
@@ -261,14 +252,19 @@ let () =
   | None ->
       print_endline "INVALID"
   | Some {m; w} ->
-      if (not (validate_tm m)) || not (validate_input_word m w) then (
-        print_endline "INVALID" )
+      if (not (validate_tm m)) || not (validate_input_word m w) then
+        print_endline "INVALID"
       else
-        match simulate m w with
-        | Dont_know -> print_endline "DON'T KNOW"
-        | Accept t ->
-            print_endline (string_of_bool_out true) ;
-            print_endline (tape_to_string t)
-        | Reject t ->
-            print_endline (string_of_bool_out false) ;
-            print_endline (tape_to_string t)
+        match s1tm m w with
+        | None ->
+            print_endline "DON'T KNOW"
+        | Some b ->
+            (match simulate m w with
+             | Dont_know ->
+                 print_endline "DON'T KNOW"
+             | Accept t ->
+                 print_endline (string_of_bool_out b);
+                 print_endline (tape_to_string t)
+             | Reject t ->
+                 print_endline (string_of_bool_out b);
+                 print_endline (tape_to_string t))
