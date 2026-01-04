@@ -102,8 +102,7 @@ let () =
 let blank = "_"
 let max_steps = 200
 
-let string_of_bool_out (b : bool) = if b then "YES" else "NO"
-(* Alternativa: if b then "TRUE" else "FALSE" *)
+let fmt_bool (b : bool) = if b then "YES" else "NO"
 
 (* ---------- parsing ---------- *)
 
@@ -116,74 +115,74 @@ let tm_w_de_string_safe (s : string) : tm_w option =
 
 (* ---------- validacao ---------- *)
 
-let mem_string (x : string) (xs : string list) = List.exists (fun y -> x = y) xs
+let contains_str (x : string) (xs : string list) = List.exists (fun y -> x = y) xs
 
-let uniq (xs : string list) : string list =
+let unique_items (xs : string list) : string list =
   let tbl = Hashtbl.create (List.length xs) in
   List.iter (fun x -> Hashtbl.replace tbl x ()) xs;
   Hashtbl.fold (fun k () acc -> k :: acc) tbl []
 
-let symbols_of_word (w : string) : simbolo list =
+let string_to_list (w : string) : simbolo list =
   (* Assume-se que cada simbolo e um caracter. *)
   List.init (String.length w) (fun i -> String.make 1 w.[i])
 
-let validate_tm (m : tm) : bool =
+let check_tm_validity (m : tm) : bool =
   let states_ok =
-    mem_string m.start_state m.states
-    && mem_string m.accept_state m.states
-    && mem_string m.reject_state m.states
+    contains_str m.start_state m.states
+    && contains_str m.accept_state m.states
+    && contains_str m.reject_state m.states
   in
-  let tape_alpha = uniq (m.input_alphabet @ m.tape_alphabet_extra) in
-  let blank_ok = mem_string blank tape_alpha in
+  let tape_alpha = unique_items (m.input_alphabet @ m.tape_alphabet_extra) in
+  let blank_ok = contains_str blank tape_alpha in
   let delta_ok =
     Hashtbl.fold
       (fun st inner acc ->
         acc
-        && mem_string st m.states
+        && contains_str st m.states
         && Hashtbl.fold
              (fun read_sym (next_st, write_sym, _dir) acc2 ->
                acc2
-               && mem_string read_sym tape_alpha
-               && mem_string next_st m.states
-               && mem_string write_sym tape_alpha )
+               && contains_str read_sym tape_alpha
+               && contains_str next_st m.states
+               && contains_str write_sym tape_alpha )
              inner true )
       m.delta true
   in
   states_ok && blank_ok && delta_ok
 
-let validate_input_word (m : tm) (w : string) : bool =
-  let syms = symbols_of_word w in
-  List.for_all (fun s -> mem_string s m.input_alphabet) syms
+let check_word_validity (m : tm) (w : string) : bool =
+  let syms = string_to_list w in
+  List.for_all (fun s -> contains_str s m.input_alphabet) syms
 
 (* ---------- fita ---------- *)
 
-type tape = {left_rev: simbolo list; cur: simbolo; right: simbolo list}
+type zipper = {left_stack: simbolo list; current: simbolo; right_stack: simbolo list}
 
-let tape_of_word (w : string) : tape =
-  match symbols_of_word w with
-  | [] -> {left_rev = []; cur = blank; right = []}
-  | x :: xs -> {left_rev = []; cur = x; right = xs}
+let init_zipper (w : string) : zipper =
+  match string_to_list w with
+  | [] -> {left_stack = []; current = blank; right_stack = []}
+  | x :: xs -> {left_stack = []; current = x; right_stack = xs}
 
-let tape_read (t : tape) = t.cur
+let read_head (t : zipper) = t.current
 
-let tape_write (t : tape) (s : simbolo) = {t with cur = s}
+let write_head (t : zipper) (s : simbolo) = {t with current = s}
 
-let tape_move_right (t : tape) : tape =
-  match t.right with
-  | [] -> {left_rev = t.cur :: t.left_rev; cur = blank; right = []}
-  | x :: xs -> {left_rev = t.cur :: t.left_rev; cur = x; right = xs}
+let move_head_right (t : zipper) : zipper =
+  match t.right_stack with
+  | [] -> {left_stack = t.current :: t.left_stack; current = blank; right_stack = []}
+  | x :: xs -> {left_stack = t.current :: t.left_stack; current = x; right_stack = xs}
 
-let tape_move_left (t : tape) : tape =
-  match t.left_rev with
-  | [] -> {left_rev = []; cur = blank; right = t.cur :: t.right}
-  | x :: xs -> {left_rev = xs; cur = x; right = t.cur :: t.right}
+let move_head_left (t : zipper) : zipper =
+  match t.left_stack with
+  | [] -> {left_stack = []; current = blank; right_stack = t.current :: t.right_stack}
+  | x :: xs -> {left_stack = xs; current = x; right_stack = t.current :: t.right_stack}
 
-let tape_move (t : tape) = function
+let move_head (t : zipper) = function
   | S -> t
-  | R -> tape_move_right t
-  | L -> tape_move_left t
+  | R -> move_head_right t
+  | L -> move_head_left t
 
-let tape_to_symbols (t : tape) : simbolo list = List.rev t.left_rev @ (t.cur :: t.right)
+let zipper_to_list (t : zipper) : simbolo list = List.rev t.left_stack @ (t.current :: t.right_stack)
 
 let drop_while (p : 'a -> bool) (xs : 'a list) : 'a list =
   let rec go = function
@@ -197,50 +196,50 @@ let trim_blanks (xs : simbolo list) : simbolo list =
   let rev_no_trailing = drop_while (fun s -> s = blank) (List.rev no_leading) in
   List.rev rev_no_trailing
 
-let tape_to_string (t : tape) : string =
-  let core = tape_to_symbols t |> trim_blanks in
+let zipper_to_string (t : zipper) : string =
+  let core = zipper_to_list t |> trim_blanks in
   match core with
   | [] -> blank
   | _ -> String.concat "" (core @ [blank])
 
 (* ---------- simulacao ---------- *)
 
-type sim_result =
-  | Accept of tape
-  | Reject of tape
-  | Dont_know
+type run_outcome =
+  | Accepted of zipper
+  | Rejected of zipper
+  | Undetermined
 
 let lookup_transition (m : tm) (st : estado) (sym : simbolo) : transition option =
   match Hashtbl.find_opt m.delta st with
   | None -> None
   | Some inner -> Hashtbl.find_opt inner sym
 
-let step (m : tm) (st : estado) (t : tape) : (estado * tape) option =
-  let sym = tape_read t in
+let next_state (m : tm) (st : estado) (t : zipper) : (estado * zipper) option =
+  let sym = read_head t in
   match lookup_transition m st sym with
   | None -> None
   | Some (next_st, write_sym, dir) ->
-      let t' = tape_write t write_sym |> fun t2 -> tape_move t2 dir in
+      let t' = write_head t write_sym |> fun t2 -> move_head t2 dir in
       Some (next_st, t')
 
-let simulate (m : tm) (w : string) : sim_result =
+let run_tm (m : tm) (w : string) : run_outcome =
   let rec loop steps st t =
-    if st = m.accept_state then Accept t
-    else if st = m.reject_state then Reject t
-    else if steps >= max_steps then Dont_know
+    if st = m.accept_state then Accepted t
+    else if st = m.reject_state then Rejected t
+    else if steps >= max_steps then Undetermined
     else
-      match step m st t with
-      | None -> Reject t (* Parou fora de qA ou qR, rejeita *)
+      match next_state m st t with
+      | None -> Rejected t (* Parou fora de qA ou qR, rejeita *)
       | Some (st', t') -> loop (steps + 1) st' t'
   in
-  loop 0 m.start_state (tape_of_word w)
+  loop 0 m.start_state (init_zipper w)
 
 (* s1tm (apenas booleano) *)
 let s1tm (m : tm) (w : string) : bool option =
-  match simulate m w with
-  | Accept _ -> Some true
-  | Reject _ -> Some false
-  | Dont_know -> None
+  match run_tm m w with
+  | Accepted _ -> Some true
+  | Rejected _ -> Some false
+  | Undetermined -> None
 
 
 
@@ -252,19 +251,19 @@ let () =
   | None ->
       print_endline "INVALID"
   | Some {m; w} ->
-      if (not (validate_tm m)) || not (validate_input_word m w) then
+      if (not (check_tm_validity m)) || not (check_word_validity m w) then
         print_endline "INVALID"
       else
         match s1tm m w with
         | None ->
             print_endline "DON'T KNOW"
         | Some b ->
-            (match simulate m w with
-             | Dont_know ->
+            (match run_tm m w with
+             | Undetermined ->
                  print_endline "DON'T KNOW"
-             | Accept t ->
-                 print_endline (string_of_bool_out b);
-                 print_endline (tape_to_string t)
-             | Reject t ->
-                 print_endline (string_of_bool_out b);
-                 print_endline (tape_to_string t))
+             | Accepted t ->
+                 print_endline (fmt_bool b);
+                 print_endline (zipper_to_string t)
+             | Rejected t ->
+                 print_endline (fmt_bool b);
+                 print_endline (zipper_to_string t))
